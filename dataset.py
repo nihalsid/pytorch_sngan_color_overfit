@@ -1,12 +1,12 @@
-import torch
 import torch.utils.data
 import numpy as np
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, max_iterations):
+    def __init__(self, max_iterations, mode_3d=False):
         super().__init__()
-
+        self.mode_3d = mode_3d
+        self.volume_shape = 32 if mode_3d else 64
         # ColorBrewer Qualitative 8-class Set1 color palette
         self.colors = np.array([
             (228, 26, 28),
@@ -23,13 +23,17 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         random_color_index = np.random.randint(0, self.colors.shape[0], size=1).item()
-        random_color = self.colors[random_color_index][:, np.newaxis, np.newaxis]
-
-        image = np.repeat(random_color, 64, axis=1)
-        image = np.repeat(image, 64, axis=2)
-        image = (image.astype(np.float32) / 255.0) * 2 - 1
-
-        return image
+        if self.mode_3d:
+            random_color = self.colors[random_color_index][:, np.newaxis, np.newaxis, np.newaxis]
+            volume = np.repeat(random_color, self.volume_shape, axis=1)
+            volume = np.repeat(volume, self.volume_shape, axis=2)
+            volume = np.repeat(volume, self.volume_shape, axis=3)
+        else:
+            random_color = self.colors[random_color_index][:, np.newaxis, np.newaxis]
+            volume = np.repeat(random_color, self.volume_shape, axis=1)
+            volume = np.repeat(volume, self.volume_shape, axis=2)
+        volume = (volume.astype(np.float32) / 255.0) * 2 - 1
+        return volume
 
     def __len__(self):
         return self.max_iterations
